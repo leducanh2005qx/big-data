@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "collection_status.schema.json",
+  "title": "Air Quality Collection Status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_type",
+    "status_id",
+    "source",
+    "location_id",
+    "status",
+    "poll_started_at",
+    "poll_completed_at",
+    "records_published",
+    "records_rejected",
+    "error"
+  ],
+  "properties": {
+    "event_type": { "const": "collection_status" },
+    "status_id": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "minLength": 1 },
+    "location_id": { "type": "string", "pattern": "^[0-9]+$" },
+    "status": { "enum": ["success", "partial", "failed"] },
+    "poll_started_at": { "type": "string", "format": "date-time" },
+    "poll_completed_at": { "type": "string", "format": "date-time" },
+    "records_published": { "type": "integer", "minimum": 0 },
+    "records_rejected": { "type": "integer", "minimum": 0 },
+    "error": { "type": ["string", "null"] }
+  }
+}

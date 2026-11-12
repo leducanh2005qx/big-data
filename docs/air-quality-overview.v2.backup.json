@@ -1,0 +1,1029 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Dashboard tiếng Việt cho hệ thống giám sát chất lượng không khí. AI summary được cache trong InfluxDB và Grafana truy vấn từ cùng datasource.",
+  "editable": false,
+  "graphTooltip": 1,
+  "id": null,
+  "panels": [
+    {
+      "id": 1,
+      "title": "AQI hiện tại",
+      "type": "stat",
+      "description": "AQI lấy trực tiếp từ API theo chuẩn được ghi trong dữ liệu; không tính ngược từ nồng độ.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có dữ liệu",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 51
+              },
+              {
+                "color": "red",
+                "value": 101
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"value\") FROM \"raw_7d\".\"air_quality_observation\" WHERE time > now() - 7d AND time <= now() AND \"metric_type\" = 'aqi' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY \"city\",\"pollutant\",\"aqi_standard\""
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "PM2.5 hiện tại (µg/m³)",
+      "type": "stat",
+      "description": "Bụi mịn có đường kính không quá 2,5 micromet.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có dữ liệu",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 51
+              },
+              {
+                "color": "red",
+                "value": 101
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"value\") FROM \"raw_7d\".\"air_quality_observation\" WHERE time > now() - 7d AND time <= now() AND \"pollutant\" = 'pm25' AND \"metric_type\" = 'concentration' AND \"unit\" = 'ug/m3' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY \"city\""
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "PM10 hiện tại (µg/m³)",
+      "type": "stat",
+      "description": "Hạt bụi có đường kính không quá 10 micromet.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có dữ liệu",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 51
+              },
+              {
+                "color": "red",
+                "value": 101
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"value\") FROM \"raw_7d\".\"air_quality_observation\" WHERE time > now() - 7d AND time <= now() AND \"pollutant\" = 'pm10' AND \"metric_type\" = 'concentration' AND \"unit\" = 'ug/m3' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY \"city\""
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "AQI cao nhất trong vùng",
+      "type": "stat",
+      "description": "Giá trị cao nhất trong dữ liệu AQI thật của khoảng 7 ngày; không đồng nhất với PM2.5.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có dữ liệu",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 51
+              },
+              {
+                "color": "red",
+                "value": 101
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT max(\"value\") FROM \"raw_7d\".\"air_quality_observation\" WHERE time > now() - 7d AND time <= now() AND \"metric_type\" = 'aqi' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Diễn biến AQI theo thời gian",
+      "type": "timeseries",
+      "description": "AQI theo chuẩn được ghi trong dữ liệu. Khoảng trống không được nối thành giá trị 0.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có AQI trong khoảng thời gian đã chọn",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 51
+              },
+              {
+                "color": "orange",
+                "value": 101
+              },
+              {
+                "color": "red",
+                "value": 151
+              },
+              {
+                "color": "purple",
+                "value": 201
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"value\") FROM \"raw_7d\".\"air_quality_observation\" WHERE $timeFilter AND \"metric_type\" = 'aqi' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY time($__interval),\"city\",\"pollutant\",\"aqi_standard\" fill(null)"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "AI phân tích xu hướng AQI",
+      "type": "table",
+      "description": "Nhận xét được tạo từ thống kê thật trong InfluxDB; không gọi OpenAI theo mỗi lần Grafana refresh.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "Chưa có bản phân tích trong khoảng thời gian đã chọn"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"summary\"),last(\"mode\"),last(\"data_updated_at\"),last(\"generated_at\") FROM \"raw_7d\".\"air_quality_ai_summary\" WHERE time > now() - 7d AND \"scope\" = 'aqi-trend' GROUP BY \"city\",\"time_range\""
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Diễn biến PM2.5",
+      "type": "timeseries",
+      "description": "Đơn vị µg/m³; dữ liệu aggregate theo giờ từ InfluxDB.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có dữ liệu PM2.5 trong khoảng thời gian đã chọn"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT mean(\"average_value\") FROM \"aggregates_30d\".\"air_quality_hourly\" WHERE $timeFilter AND \"pollutant\" = 'pm25' AND \"metric_type\" = 'concentration' AND \"unit\" = 'ug/m3' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY time($__interval),\"city\" fill(null)"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Diễn biến PM10",
+      "type": "timeseries",
+      "description": "Đơn vị µg/m³; dữ liệu aggregate theo giờ từ InfluxDB.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có dữ liệu PM10 trong khoảng thời gian đã chọn"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT mean(\"average_value\") FROM \"aggregates_30d\".\"air_quality_hourly\" WHERE $timeFilter AND \"pollutant\" = 'pm10' AND \"metric_type\" = 'concentration' AND \"unit\" = 'ug/m3' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY time($__interval),\"city\" fill(null)"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "AI nhận xét bụi mịn",
+      "type": "table",
+      "description": "Nhận xét được tạo từ thống kê thật trong InfluxDB; không gọi OpenAI theo mỗi lần Grafana refresh.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "Chưa có bản phân tích trong khoảng thời gian đã chọn"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"summary\"),last(\"mode\"),last(\"data_updated_at\"),last(\"generated_at\") FROM \"raw_7d\".\"air_quality_ai_summary\" WHERE time > now() - 7d AND \"scope\" = 'particulate' GROUP BY \"city\",\"time_range\""
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "So sánh PM2.5 giữa các thành phố",
+      "type": "barchart",
+      "description": "Giá trị PM2.5 mới nhất thật sự có trong raw_7d; đơn vị µg/m³.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 22
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có dữ liệu"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"value\") FROM \"raw_7d\".\"air_quality_observation\" WHERE time > now() - 7d AND time <= now() AND \"pollutant\" = 'pm25' AND \"metric_type\" = 'concentration' AND \"unit\" = 'ug/m3' AND \"source\" =~ /^$source$/ GROUP BY \"city\""
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "AI nhận xét so sánh thành phố",
+      "type": "table",
+      "description": "Nhận xét được tạo từ thống kê thật trong InfluxDB; không gọi OpenAI theo mỗi lần Grafana refresh.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 22
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "Chưa có bản phân tích trong khoảng thời gian đã chọn"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"summary\"),last(\"mode\"),last(\"data_updated_at\"),last(\"generated_at\") FROM \"raw_7d\".\"air_quality_ai_summary\" WHERE time > now() - 7d AND \"scope\" = 'compare' GROUP BY \"city\",\"time_range\""
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "CO, NO2, SO2 và O3",
+      "type": "timeseries",
+      "description": "Nồng độ được chuẩn hóa về µg/m³.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 22
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "noValue": "Chưa có dữ liệu"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT mean(\"value\") FROM \"raw_7d\".\"air_quality_observation\" WHERE $timeFilter AND \"pollutant\" =~ /^(co|no2|so2|o3)$/ AND \"metric_type\" = 'concentration' AND \"unit\" = 'ug/m3' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY time($__interval),\"pollutant\" fill(null)"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Bản đồ AQI và nồng độ bụi theo thành phố",
+      "type": "geomap",
+      "description": "AQI dùng ngưỡng US-AQI khi trường aqi_standard là US-AQI. PM2.5 và PM10 dùng thang màu liên tục, không áp dụng ngưỡng AQI lên nồng độ bụi.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 16,
+        "x": 0,
+        "y": 30
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "Chưa có tọa độ hoặc chỉ số trong dữ liệu thật",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 51
+              },
+              {
+                "color": "orange",
+                "value": 101
+              },
+              {
+                "color": "red",
+                "value": 151
+              },
+              {
+                "color": "purple",
+                "value": 201
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pm25"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pm10"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "basemap": {
+          "config": {},
+          "name": "Bản đồ nền",
+          "type": "default"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": true,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "style": {
+                "color": {
+                  "field": "aqi"
+                },
+                "opacity": 0.9,
+                "size": {
+                  "field": "aqi",
+                  "fixed": 8
+                },
+                "text": {
+                  "field": "city"
+                }
+              }
+            },
+            "location": {
+              "latitude": "latitude",
+              "longitude": "longitude",
+              "mode": "coords"
+            },
+            "name": "AQI theo thành phố",
+            "tooltip": true,
+            "type": "markers"
+          },
+          {
+            "config": {
+              "style": {
+                "color": {
+                  "field": "pm25"
+                },
+                "opacity": 0.75,
+                "size": {
+                  "field": "pm25",
+                  "fixed": 8
+                },
+                "text": {
+                  "field": "city"
+                }
+              }
+            },
+            "location": {
+              "latitude": "latitude",
+              "longitude": "longitude",
+              "mode": "coords"
+            },
+            "name": "Nồng độ PM2.5",
+            "tooltip": true,
+            "type": "markers"
+          },
+          {
+            "config": {
+              "style": {
+                "color": {
+                  "field": "pm10"
+                },
+                "opacity": 0.65,
+                "size": {
+                  "field": "pm10",
+                  "fixed": 8
+                },
+                "text": {
+                  "field": "city"
+                }
+              }
+            },
+            "location": {
+              "latitude": "latitude",
+              "longitude": "longitude",
+              "mode": "coords"
+            },
+            "name": "Nồng độ PM10",
+            "tooltip": true,
+            "type": "markers"
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        },
+        "view": {
+          "id": "coords",
+          "lat": 16.2,
+          "lon": 106.2,
+          "zoom": 5
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"value\") AS \"aqi\",last(\"latitude\") AS \"latitude\",last(\"longitude\") AS \"longitude\" FROM \"raw_7d\".\"air_quality_observation\" WHERE time > now() - 7d AND time <= now() AND \"metric_type\" = 'aqi' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY \"city\",\"source\",\"pollutant\",\"aqi_standard\""
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"value\") AS \"pm25\",last(\"latitude\") AS \"latitude\",last(\"longitude\") AS \"longitude\" FROM \"raw_7d\".\"air_quality_observation\" WHERE time > now() - 7d AND time <= now() AND \"metric_type\" = 'concentration' AND \"pollutant\" = 'pm25' AND \"unit\" = 'ug/m3' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY \"city\",\"source\",\"pollutant\""
+        },
+        {
+          "refId": "C",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"value\") AS \"pm10\",last(\"latitude\") AS \"latitude\",last(\"longitude\") AS \"longitude\" FROM \"raw_7d\".\"air_quality_observation\" WHERE time > now() - 7d AND time <= now() AND \"metric_type\" = 'concentration' AND \"pollutant\" = 'pm10' AND \"unit\" = 'ug/m3' AND \"country\" =~ /^$country$/ AND \"city\" =~ /^$city$/ AND \"source\" =~ /^$source$/ GROUP BY \"city\",\"source\",\"pollutant\""
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "AI tổng hợp dữ liệu hiện tại",
+      "type": "table",
+      "description": "Nhận xét được tạo từ thống kê thật trong InfluxDB; không gọi OpenAI theo mỗi lần Grafana refresh.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 30
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "Chưa có bản phân tích trong khoảng thời gian đã chọn"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"summary\"),last(\"mode\"),last(\"data_updated_at\"),last(\"generated_at\") FROM \"raw_7d\".\"air_quality_ai_summary\" WHERE time > now() - 7d AND \"scope\" = 'overview' GROUP BY \"city\",\"time_range\""
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Trạng thái bộ thu thập và độ mới dữ liệu",
+      "type": "table",
+      "description": "Thời điểm hoàn tất collector, số bản ghi gửi và số bản ghi bị loại.",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "air-quality-influx"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "Chưa có trạng thái collector"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "air-quality-influx"
+          },
+          "query": "SELECT last(\"poll_completed_at\"),last(\"records_published\"),last(\"records_rejected\") FROM \"raw_7d\".\"air_quality_collection_status\" WHERE time > now() - 7d GROUP BY \"source\",\"location_id\",\"status\""
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Chú thích dữ liệu",
+      "type": "text",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 42
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "### Ý nghĩa các chỉ số\n\n- **PM2.5:** bụi mịn có đường kính không quá 2,5 micromet.\n- **PM10:** hạt bụi có đường kính không quá 10 micromet.\n- **AQI:** chỉ số lấy trực tiếp từ API theo chuẩn ghi trong dữ liệu; không tự tính lại từ bụi.\n- **model_estimate:** dữ liệu mô hình Open-Meteo/CAMS, không phải đo trực tiếp tại trạm.\n- **measured:** dữ liệu đo từ nguồn quan trắc.\n- **Chưa có dữ liệu:** không đồng nghĩa với chất lượng không khí tốt."
+      }
+    },
+    {
+      "id": 13,
+      "title": "Trợ lý AI chất lượng không khí",
+      "type": "text",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "### Hỏi trợ lý AI\n\nCác panel AI phía trên lấy summary đã cache trong InfluxDB, cùng nguồn dữ liệu với biểu đồ. Muốn hỏi tự do bằng tiếng Việt, mở [giao diện trợ lý AI](http://localhost:8090). Nếu OpenAI lỗi, hệ thống hiển thị fallback từ thống kê thật; không bịa số liệu."
+      }
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "air-quality",
+    "big-data",
+    "vietnam"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "country",
+        "label": "Quốc gia",
+        "type": "query",
+        "query": "SHOW TAG VALUES FROM \"air_quality_observation\" WITH KEY = \"country\"",
+        "includeAll": true,
+        "allValue": ".*",
+        "refresh": 1,
+        "datasource": {
+          "type": "influxdb",
+          "uid": "air-quality-influx"
+        },
+        "current": {
+          "text": "Tất cả",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": []
+      },
+      {
+        "name": "city",
+        "label": "Thành phố",
+        "type": "query",
+        "query": "SHOW TAG VALUES FROM \"air_quality_observation\" WITH KEY = \"city\"",
+        "includeAll": true,
+        "allValue": ".*",
+        "refresh": 1,
+        "datasource": {
+          "type": "influxdb",
+          "uid": "air-quality-influx"
+        },
+        "current": {
+          "text": "Tất cả",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": []
+      },
+      {
+        "name": "source",
+        "label": "Nguồn dữ liệu",
+        "type": "query",
+        "query": "SHOW TAG VALUES FROM \"air_quality_observation\" WITH KEY = \"source\"",
+        "includeAll": true,
+        "allValue": ".*",
+        "refresh": 1,
+        "datasource": {
+          "type": "influxdb",
+          "uid": "air-quality-influx"
+        },
+        "current": {
+          "text": "Tất cả",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": []
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "title": "HỆ THỐNG GIÁM SÁT CHẤT LƯỢNG KHÔNG KHÍ",
+  "uid": "air-quality-overview",
+  "version": 4
+}

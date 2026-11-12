@@ -1,0 +1,91 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Cảnh báo chất lượng không khí
+    folder: Chất lượng không khí
+    interval: 1m
+    rules:
+      - uid: pm25-aqi-demo-high
+        title: AQI PM2.5 vượt ngưỡng kiểm thử
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: air-quality-influx
+            model:
+              datasource:
+                type: influxdb
+                uid: air-quality-influx
+              query: SELECT max("aqi_above_demo_threshold") FROM "raw_7d"."air_quality_observation" WHERE time > now() - 15m AND "metric_type" = 'aqi' AND "pollutant" = 'pm25'
+              rawQuery: true
+              resultFormat: time_series
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params: []
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        dashboardUid: air-quality-overview
+        panelId: 3
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: AQI PM2.5 đã vượt ngưỡng kiểm thử được cấu hình.
+          description: Đây là cảnh báo minh họa cho pipeline, không phải cảnh báo sức khỏe chính thức. Hãy xác nhận chuẩn AQI của nguồn trước khi sử dụng thực tế.
+        labels:
+          severity: warning
+          metric_type: aqi
+        notification_settings:
+          receiver: Cảnh báo chất lượng không khí
+          group_by:
+            - alertname
+        isPaused: false

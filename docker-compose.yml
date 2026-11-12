@@ -1,0 +1,274 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+    healthcheck:
+      test: ["CMD", "cub", "zk-ready", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT_INTERNAL://0.0.0.0:29092,PLAINTEXT_EXTERNAL://0.0.0.0:9092
+      # Đã ép cứng về 127.0.0.1, tuyệt đối không dùng chữ localhost nữa
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_INTERNAL://kafka:29092,PLAINTEXT_EXTERNAL://127.0.0.1:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.00"
+    healthcheck:
+      test: ["CMD", "cub", "kafka-ready", "-b", "localhost:9092", "1", "20"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - /bin/bash
+      - -ec
+      - |
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic air_quality_data --partitions 1 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic air_quality_collection_status --partitions 1 --replication-factor 1
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+
+  spark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      influxdb:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_STATUS_TOPIC: air_quality_collection_status
+      INFLUXDB_HOST: influxdb
+      INFLUXDB_PORT: 8086
+      INFLUXDB_DATABASE: ${INFLUXDB_DATABASE:?Set INFLUXDB_DATABASE in .env}
+      INFLUXDB_ADMIN_USER: ${INFLUXDB_ADMIN_USER:?Set INFLUXDB_ADMIN_USER in .env}
+      INFLUXDB_ADMIN_PASSWORD: ${INFLUXDB_ADMIN_PASSWORD:?Set INFLUXDB_ADMIN_PASSWORD in .env}
+      SPARK_CHECKPOINT_DIR: /app/.spark_checkpoints
+      SPARK_IVY_DIR: /app/.ivy2
+      SPARK_READY_FILE: /tmp/airquality-spark-ready
+      SPARK_DRIVER_MEMORY: ${SPARK_DRIVER_MEMORY:-1g}
+      SPARK_LOCAL_CORES: ${SPARK_LOCAL_CORES:-2}
+    volumes:
+      - spark_checkpoints:/app/.spark_checkpoints
+      - spark_ivy:/app/.ivy2
+      - spark_quarantine:/app/data/quarantine
+    command: >-
+      sh -c "python3 -m scripts.influxdb.setup_retention
+      && python3 spark_jobs/stream_processor.py"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/airquality-spark-ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.00"
+
+  open-meteo-collector:
+    image: airquality_bigdata-spark
+    depends_on:
+      spark:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_STATUS_TOPIC: air_quality_collection_status
+      OPENMETEO_LOCATIONS: ${OPENMETEO_LOCATIONS:?Set OPENMETEO_LOCATIONS in .env}
+      OPENMETEO_INTERVAL_SECONDS: ${OPENMETEO_INTERVAL_SECONDS:-600}
+      OPENMETEO_DEDUP_FILE: /app/data/state/open_meteo_seen_ids.txt
+    volumes:
+      - open_meteo_state:/app/data/state
+    command: ["python3", "-m", "producer.open_meteo_collector", "--continuous"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+
+  air-quality-ai:
+    image: airquality_bigdata-spark
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    environment:
+      AI_HOST: 0.0.0.0
+      AI_PORT: 8090
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_API_URL: ${AI_API_URL:-https://api.openai.com/v1/chat/completions}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_AUTOPUBLISH: ${AI_AUTOPUBLISH:-true}
+      AI_SUMMARY_REFRESH_SECONDS: ${AI_SUMMARY_REFRESH_SECONDS:-600}
+      ALERT_EMAIL_WORKER_ENABLED: ${ALERT_EMAIL_WORKER_ENABLED:-true}
+      ALERT_EMAIL_ENABLED: ${ALERT_EMAIL_ENABLED:-false}
+      ALERT_EMAIL_DRY_RUN: ${ALERT_EMAIL_DRY_RUN:-true}
+      ALERT_EMAIL_DEMO_SEND: ${ALERT_EMAIL_DEMO_SEND:-false}
+      ALERT_EMAIL_REFRESH_SECONDS: ${ALERT_EMAIL_REFRESH_SECONDS:-600}
+      ALERT_EMAIL_COOLDOWN_SECONDS: ${ALERT_EMAIL_COOLDOWN_SECONDS:-3600}
+      ALERT_AQI_THRESHOLD: ${ALERT_AQI_THRESHOLD:-100}
+      ALERT_PM25_THRESHOLD: ${ALERT_PM25_THRESHOLD:-35}
+      ALERT_PM10_THRESHOLD: ${ALERT_PM10_THRESHOLD:-150}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM:-}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
+      INFLUXDB_HOST: influxdb
+      INFLUXDB_PORT: 8086
+      INFLUXDB_DATABASE: ${INFLUXDB_DATABASE:?Set INFLUXDB_DATABASE in .env}
+      INFLUXDB_ADMIN_USER: ${INFLUXDB_ADMIN_USER:?Set INFLUXDB_ADMIN_USER in .env}
+      INFLUXDB_ADMIN_PASSWORD: ${INFLUXDB_ADMIN_PASSWORD:?Set INFLUXDB_ADMIN_PASSWORD in .env}
+    command: ["python3", "scripts/air_quality_ai.py"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+
+  influxdb:
+    image: influxdb:1.8
+    ports:
+      - "8086:8086"
+    environment:
+      INFLUXDB_DB: ${INFLUXDB_DATABASE:?Set INFLUXDB_DATABASE in .env}
+      INFLUXDB_ADMIN_USER: ${INFLUXDB_ADMIN_USER:?Set INFLUXDB_ADMIN_USER in .env}
+      INFLUXDB_ADMIN_PASSWORD: ${INFLUXDB_ADMIN_PASSWORD:?Set INFLUXDB_ADMIN_PASSWORD in .env}
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.00"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mysql:
+    image: mysql:8.0
+    profiles: ["metadata"]
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sensor_metadata}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.50"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'mysqladmin ping -h 127.0.0.1 -uroot -p"$${MYSQL_ROOT_PASSWORD}"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?Set GRAFANA_ADMIN_USER in .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      INFLUXDB_ADMIN_USER: ${INFLUXDB_ADMIN_USER:?Set INFLUXDB_ADMIN_USER in .env}
+      INFLUXDB_ADMIN_PASSWORD: ${INFLUXDB_ADMIN_PASSWORD:?Set INFLUXDB_ADMIN_PASSWORD in .env}
+      INFLUXDB_DATABASE: ${INFLUXDB_DATABASE:?Set INFLUXDB_DATABASE in .env}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-https://example.invalid/grafana-alerts}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  zookeeper_data:
+  zookeeper_log:
+  kafka_data:
+  influxdb_data:
+  mysql_data:
+  grafana_data:
+  spark_checkpoints:
+  spark_quarantine:
+  spark_ivy:
+  open_meteo_state:

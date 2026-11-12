@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "air_quality_observation.schema.json",
+  "title": "Air Quality Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "source",
+    "data_mode",
+    "source_record_id",
+    "station_id",
+    "country",
+    "city",
+    "latitude",
+    "longitude",
+    "observed_at",
+    "ingested_at",
+    "pollutant",
+    "metric_type",
+    "value",
+    "unit",
+    "category",
+    "aqi_standard",
+    "quality_flags",
+    "attributions"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "event_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "source": { "type": "string", "minLength": 1 },
+    "data_mode": {
+      "enum": [
+        "measured",
+        "model_estimate",
+        "historical_csv_replay",
+        "synthetic_test"
+      ]
+    },
+    "source_record_id": { "type": ["string", "null"] },
+    "station_id": { "type": ["string", "null"] },
+    "country": { "type": ["string", "null"] },
+    "city": { "type": ["string", "null"] },
+    "latitude": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+    "longitude": {
+      "type": ["number", "null"],
+      "minimum": -180,
+      "maximum": 180
+    },
+    "observed_at": { "type": ["string", "null"], "format": "date-time" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "pollutant": { "type": "string", "minLength": 1 },
+    "metric_type": { "enum": ["aqi", "concentration"] },
+    "value": { "type": "number" },
+    "unit": { "type": "string", "minLength": 1 },
+    "category": { "type": ["string", "null"] },
+    "aqi_standard": { "type": ["string", "null"] },
+    "quality_flags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "attributions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "url", "license"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "url": { "type": ["string", "null"] },
+          "license": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "metric_type": { "const": "aqi" } } },
+      "then": { "properties": { "unit": { "const": "AQI index" } } }
+    },
+    {
+      "if": { "properties": { "metric_type": { "const": "concentration" } } },
+      "then": { "properties": { "unit": { "not": { "const": "AQI index" } } } }
+    }
+  ]
+}

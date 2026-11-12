@@ -1,0 +1,12 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.spark_checkpoints/
+.spark_checkpoints_*/
+.ivy2/
+.ivy2_*/
+data/raw/
+data/quarantine/
+data/state/
